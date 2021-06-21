@@ -9,38 +9,42 @@ const int CLUSTER_PADDING = 15;
 const double EPSILON = 0.0001;
 
 class FruchtermanReingoldAlgorithm implements Algorithm {
+  FruchtermanReingoldAlgorithm({
+    this.renderer,
+    this.iterations = DEFAULT_ITERATIONS,
+    this.repulsionRate = REPULSION_RATE,
+    this.attractionRate = ATTRACTION_RATE,
+    this.repulsionPercentage = REPULSION_PERCENTAGE,
+    this.attractionPercentage = ATTRACTION_PERCENTAGE,
+  }) {
+    renderer = renderer ?? ArrowEdgeRenderer();
+  }
+
   Map<Node, Offset> displacement = {};
   Random rand = Random();
   double graphHeight = 500; //default value, change ahead of time
   double graphWidth = 500;
   late double tick;
 
-  int iterations = DEFAULT_ITERATIONS;
-  double repulsionRate = REPULSION_RATE;
-  double attractionRate = ATTRACTION_RATE;
-  double repulsionPercentage = REPULSION_PERCENTAGE;
-  double attractionPercentage = ATTRACTION_PERCENTAGE;
+  int iterations;
+  double repulsionRate;
+  double attractionRate;
+  double repulsionPercentage;
+  double attractionPercentage;
 
+  @override
   EdgeRenderer? renderer;
 
-  FruchtermanReingoldAlgorithm({
-    this.iterations = DEFAULT_ITERATIONS,
-    this.renderer,
-    this.repulsionRate = REPULSION_RATE,
-    this.attractionRate = ATTRACTION_RATE,
-    this.repulsionPercentage = REPULSION_PERCENTAGE,
-    this.attractionPercentage = ATTRACTION_PERCENTAGE
-  }) {
-    renderer = renderer ?? ArrowEdgeRenderer();
-  }
-
+  @override
   void init(Graph? graph) {
     graph!.nodes.forEach((node) {
       displacement[node] = Offset.zero;
-      node.position = Offset(rand.nextDouble()  * graphWidth , rand.nextDouble() * graphHeight);
+      node.position = Offset(
+          rand.nextDouble() * graphWidth, rand.nextDouble() * graphHeight);
     });
   }
 
+  @override
   void step(Graph? graph) {
     displacement = {};
     graph!.nodes.forEach((node) {
@@ -55,7 +59,7 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
     graph.nodes.forEach((node) {
       var newPosition = node.position += displacement[node]!;
       double newDX = min(graphWidth - 40, max(0, newPosition.dx));
-      double newDY = min(graphHeight - 40,  max(0,newPosition.dy));
+      double newDY = min(graphHeight - 40, max(0, newPosition.dy));
 
       // double newDX = newPosition.dx;
       // double newDY = newPosition.dy;
@@ -71,7 +75,8 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
     nodes.forEach((node) {
       if (node != focusedNode) {
         var dispLength = max(EPSILON, displacement[node]!.distance);
-        node.position += displacement[node]! / dispLength * min(dispLength, tick);
+        node.position +=
+            displacement[node]! / dispLength * min(dispLength, tick);
       } else {
         displacement[node] = Offset.zero;
       }
@@ -84,8 +89,11 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
       var destination = edge.destination;
       var delta = source.position - destination.position;
       var deltaDistance = max(EPSILON, delta.distance);
-      var maxAttractionDistance = min(graphWidth * attractionPercentage, graphHeight * attractionPercentage);
-      var attractionForce = min(0, (maxAttractionDistance - deltaDistance)).abs() / (maxAttractionDistance * 2);
+      var maxAttractionDistance = min(graphWidth * attractionPercentage,
+          graphHeight * attractionPercentage);
+      var attractionForce =
+          min(0, (maxAttractionDistance - deltaDistance)).abs() /
+              (maxAttractionDistance * 2);
       var attractionVector = delta * attractionForce * attractionRate;
 
       displacement[source] = displacement[source]! - attractionVector;
@@ -99,8 +107,10 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
         if (nodeA != nodeB) {
           var delta = nodeA.position - nodeB.position;
           var deltaDistance = max(EPSILON, delta.distance); //protect for 0
-          var maxRepulsionDistance = min(graphWidth * repulsionPercentage, graphHeight * repulsionPercentage);
-          var repulsionForce = max(0, maxRepulsionDistance - deltaDistance) / maxRepulsionDistance; //value between 0-1
+          var maxRepulsionDistance = min(graphWidth * repulsionPercentage,
+              graphHeight * repulsionPercentage);
+          var repulsionForce = max(0, maxRepulsionDistance - deltaDistance) /
+              maxRepulsionDistance; //value between 0-1
           var repulsionVector = delta * repulsionForce * repulsionRate;
 
           displacement[nodeA] = displacement[nodeA]! + repulsionVector;
@@ -115,6 +125,7 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
 
   var focusedNode;
 
+  @override
   Size run(Graph? graph, double shiftX, double shiftY) {
     var size = findBiggestSize(graph!) * graph.nodeCount();
     graphWidth = size;
@@ -190,7 +201,8 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
 
     for (var i = 1; i < nodeClusters.length; i++) {
       var nextCluster = nodeClusters[i];
-      var xDiff = nextCluster.rect!.left - cluster.rect!.right - CLUSTER_PADDING;
+      var xDiff =
+          nextCluster.rect!.left - cluster.rect!.right - CLUSTER_PADDING;
       var yDiff = nextCluster.rect!.top - cluster.rect!.top;
       nextCluster.offset(-xDiff, -yDiff);
       cluster = nextCluster;
@@ -213,7 +225,8 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
     nodeClusters.removeWhere((element) => element.size() == 1);
   }
 
-  void followEdges(Graph graph, NodeCluster cluster, Node node, List nodesVisited) {
+  void followEdges(
+      Graph graph, NodeCluster cluster, Node node, List nodesVisited) {
     graph.successorsOf(node).forEach((successor) {
       if (!nodesVisited.contains(successor)) {
         nodesVisited.add(successor);
@@ -278,6 +291,7 @@ class FruchtermanReingoldAlgorithm implements Algorithm {
   @override
   void setFocusedNode(Node node) {}
 
+  @override
   void setDimensions(double width, double height) {
     graphWidth = width;
     graphHeight = height;
@@ -305,9 +319,13 @@ class NodeCluster {
     nodes!.add(node);
 
     if (nodes!.length == 1) {
-      rect = Rect.fromLTRB(node.x, node.y, node.x + node.width, node.y + node.height);
+      rect = Rect.fromLTRB(
+          node.x, node.y, node.x + node.width, node.y + node.height);
     } else {
-      rect = Rect.fromLTRB(min(rect!.left, node.x), min(rect!.top, node.y), max(rect!.right, node.x + node.width),
+      rect = Rect.fromLTRB(
+          min(rect!.left, node.x),
+          min(rect!.top, node.y),
+          max(rect!.right, node.x + node.width),
           max(rect!.bottom, node.y + node.height));
     }
   }
