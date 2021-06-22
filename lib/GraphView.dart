@@ -199,6 +199,7 @@ class RenderCustomLayoutBox extends RenderBox
       final node = child.parentData as NodeBoxData;
 
       node.offset = graph.getNodeAtPosition(position).position;
+      print(node.offset);
 
       child = node.nextSibling;
       position++;
